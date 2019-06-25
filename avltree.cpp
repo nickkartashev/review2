@@ -8,26 +8,23 @@ class Node
 {
 public:
     ValueType key;
-    int l=0;
-    int r=0;
-    int p=0;
+    int l = 0;
+    int r = 0;
+    int p = 0;
     int rl = 0;
     int h = 0;
     Node()
     {
-        l = 0;
-        r = 0;
-        p = 0;
-        h = 0;
-        rl = 0;
+
     }
 };
 
 template<class ValueType>
 class Set
 {
-public:
+private:
     std::vector<Node<ValueType>> tree;
+public:
     size_t sz = 0;
     int root = 0;
     Set()
@@ -42,7 +39,7 @@ public:
             this->insert(*it);
         }
     }
-    Set(Set & news)
+    Set(const Set & news)
     {
         this->tree.resize(1);
         this->tree = news.tree;
@@ -64,24 +61,29 @@ public:
         sz = 0;
         this->root = 0;
     }
-    const int diff(int ind)
+    int lson(int ind) const
+    {
+        return tree[ind].l;
+    }
+    int rson(int ind) const
+    {
+        return tree[ind].r;
+    }
+    int diff(int ind) const
     {
         if (ind == 0)
         {
             return 0;
         }
-        if (this->tree[ind].r == 0 && this->tree[this->tree[ind].r].h != 0)
+        if (rson(ind) == 0 && this->tree[rson(ind)].h != 0)
         {
-            this->tree[this->tree[ind].r].h = 0;
-            //std::cout << "WHATTJOITIOGHOIRHHGOGOGHHIOR" <<  std::endl;
+            this->tree[rson(ind)].h = 0;
         }
-        if (this->tree[ind].l == 0 && this->tree[this->tree[ind].l].h != 0)
+        if (lson(ind) == 0 && this->tree[lson(ind)].h != 0)
         {
-            this->tree[this->tree[ind].l].h = 0;
-            //std::cout << "WHATTJOITIOGHOIRHHGOGOGHHIOR" <<  std::endl;
+            this->tree[lson(ind)].h = 0;
         }
-        //std::cout << "HIGH " << this->tree[this->tree[ind].l].h - this->tree[this->tree[ind].r].h << " " << ind << " " << this->tree[this->tree[ind].l].h << " " << this->tree[this->tree[ind].r].h << std::endl;
-        return this->tree[this->tree[ind].l].h - this->tree[this->tree[ind].r].h;
+        return this->tree[lson(ind)].h - this->tree[rson(ind)].h;
     }
     const size_t size() const
     {
@@ -98,11 +100,18 @@ public:
             this->tree[ind].h = 0;
             return;
         }
-        this->tree[ind].h = (this->tree[this->tree[ind].l].h < this->tree[this->tree[ind].r].h ? this->tree[this->tree[ind].r].h : this->tree[this->tree[ind].l].h) + 1;
+        this->tree[ind].h = (this->tree[lson(ind)].h < this->tree[rson(ind)].h ? this->tree[rson(ind)].h : this->tree[lson(ind)].h) + 1;
     }
-    void rotl(int ind)
+    void rot(int ind, int dir)
     {
-        int tind = this->tree[ind].r;
+        if (dir == 1)
+        {
+            int tind = lson(ind);
+        }
+        else
+        {
+            int tind = rson(ind);
+        }
         if (tind == 0 || ind == 0)
         {
             return;
@@ -111,49 +120,30 @@ public:
         {
             this->root = tind;
         }
-        this->tree[ind].r = this->tree[tind].l;
-        if (this->tree[tind].l != 0)
+        if (dir == 1)
         {
-            this->tree[this->tree[tind].l].rl = 1;
-            this->tree[this->tree[tind].l].p = ind;
+            this->tree[ind].l = rson(ind);
         }
-        this->tree[tind].l = ind;
-        this->tree[tind].p = this->tree[ind].p;
-        this->tree[tind].rl = this->tree[ind].rl;
-        this->tree[ind].rl = -1;
-        this->tree[ind].p = tind;
-        if (this->tree[tind].rl == -1 && this->tree[tind].p != 0)
+        else
         {
-            this->tree[this->tree[tind].p].l = tind;
+            this->tree[ind].r = lson(ind);
         }
-        else if (this->tree[tind].rl == 1 && this->tree[tind].p != 0)
-        {
-            this->tree[this->tree[tind].p].r = tind;
-        }
-        this->updh(ind);
-        this->updh(tind);
-    }
-    void rotr(int ind)
-    {
-        int tind = this->tree[ind].l;
-        if (tind == 0 || ind == 0)
-        {
-            return;
-        }
-        if (ind == this->root)
-        {
-            this->root = tind;
-        }
-        this->tree[ind].l = this->tree[tind].r;
         if (this->tree[tind].r != 0)
         {
-            this->tree[this->tree[tind].r].rl = -1;
-            this->tree[this->tree[tind].r].p = ind;
+            this->tree[rson(tind)].rl = -dir;
+            this->tree[rson(tind)].p = ind;
         }
-        this->tree[tind].r = ind;
+        if (dir == 1)
+        {
+            this->tree[tind].r = ind;
+        }
+        else
+        {
+            this->tree[tind].l = ind;
+        }
         this->tree[tind].p = this->tree[ind].p;
         this->tree[tind].rl = this->tree[ind].rl;
-        this->tree[ind].rl = 1;
+        this->tree[ind].rl = dir;
         this->tree[ind].p = tind;
         if (this->tree[tind].rl == -1 && this->tree[tind].p)
         {
@@ -165,80 +155,60 @@ public:
         }
         this->updh(ind);
         this->updh(tind);
-        //std::cout << this->tree[tind].r << std::endl;
     }
     void brotl(int ind)
     {
-        rotr(this->tree[ind].r);
-        rotl(ind);
+        rot(this->tree[ind].r, 1);
+        rot(ind, -1);
     }
     void brotr(int ind)
     {
-        rotl(this->tree[ind].l);
-        rotr(ind);
+        rot(this->tree[ind].l, -1);
+        rot(ind, 1);
     }
     void backway(int ind)
     {
-        //std::cout << ind << "IND" << std::endl;
         if (ind == 0)
         {
             return;
         }
-        //int tmp = this->tree[ind].h;
         updh(ind);
-        //if (tmp.h != )
         if (this->diff(ind) == 0)
         {
-            //this->backway(this->tree[ind].p);
             return;
         }
         if (abs(this->diff(ind)) == 1)
         {
-            //if (this->tree[ind].h != tmp)
-            //{
                 this->backway(this->tree[ind].p);
-            //}
             return;
         }
         if (this->diff(ind) <= -2)
         {
-            //std::cout << "BAL1" << this->tree[ind].key << std::endl;
             if (this->diff(this->tree[ind].r) < 1)
             {
-                this->rotl(ind);
+                this->rot(ind, -1);
             }
             else
             {
                 this->brotl(ind);
             }
-            //if (this->tree[ind].h != tmp)
-            //{
                 this->backway(this->tree[ind].p);
-            //}
             return;
         }
         if (this->diff(ind) >= 2)
         {
-            //std::cout << "BAL2" << this->tree[ind].key << std::endl;
             if (this->diff(this->tree[ind].l) > -1)
             {
-                //std::cout << "THIS" << std::endl;
-                this->rotr(ind);
+                this->rot(ind, 1);
             }
             else
             {
                 this->brotr(ind);
             }
-            //if (this->tree[ind].h != tmp)
-            //{
-                this->backway(this->tree[ind].p);
-            //}
+            this->backway(this->tree[ind].p);
             return;
         }
-        //if (this->tree[ind].h != tmp)
-        //{
-            this->backway(this->tree[ind].p);
-        //}
+        this->backway(this->tree[ind].p);
     }
     void insert(ValueType newk)
     {
@@ -280,7 +250,7 @@ public:
                 }
                 else
                 {
-                    tmv = this->tree[tmv].l;
+                    tmv = lson(tmv);
                 }
             }
             if (this->tree[tmv].key < newk)
@@ -300,14 +270,13 @@ public:
                 }
                 else
                 {
-                    tmv = this->tree[tmv].r;
+                    tmv = rson(tmv);
                 }
             }
         }
     }
     void erase(ValueType newk)
     {
-        //std::cout << "AAAAA1" << std::endl;
         if (this->find(newk) == this->end())
         {
             return;
@@ -318,24 +287,23 @@ public:
         {
             if (newk < this->tree[tmv].key)
             {
-                tmv = this->tree[tmv].l;
+                tmv = lson(tmv);
             }
             else if (this->tree[tmv].key < newk)
             {
-                tmv = this->tree[tmv].r;
+                tmv = rson(tmv);
             }
             else
             {
                 break;
             }
         }
-        //std::cout << tree[tmv].key << " " << tree[tmv].r << " " << tmv << " " << tree[tree[tmv].r].l << std::endl;
-        if (this->tree[tmv].r != 0)
+        if (rson(tmv) != 0)
         {
-            int ttmv = this->tree[tmv].r;
-            while (this->tree[ttmv].l != 0)
+            int ttmv = rson(tmv);
+            while (lson(ttmv) != 0)
             {
-                ttmv = this->tree[ttmv].l;
+                ttmv = lson(ttmv);
             }
             ValueType tmtm = this->tree[ttmv].key;
             sz++;
@@ -347,26 +315,26 @@ public:
         }
         if (this->tree[tmv].p == 0)
         {
-            this->root = this->tree[tmv].l;
+            this->root = lson(tmv);
             this->tree[this->root].p = 0;
             this->tree[this->root].rl = 0;
-            this->tree[this->tree[tmv].l].p = 0;
+            this->tree[lson(tmv)].p = 0;
             return;
         }
         if (this->tree[tmv].rl == -1)
-            this->tree[this->tree[tmv].p].l = this->tree[tmv].l;
+            this->tree[this->tree[tmv].p].l = lson(tmv);
         if (this->tree[tmv].rl == 1)
-            this->tree[this->tree[tmv].p].r = this->tree[tmv].l;
+            this->tree[this->tree[tmv].p].r = lson(tmv);
         if (tree[tmv].l == 0)
         {
             updh(this->tree[tmv].p);
             this->backway(this->tree[tmv].p);
             return;
         }
-        this->tree[this->tree[tmv].l].p = this->tree[tmv].p;
-        this->tree[this->tree[tmv].l].rl = this->tree[tmv].rl;
+        this->tree[lson(tmv)].p = this->tree[tmv].p;
+        this->tree[lson(tmv)].rl = this->tree[tmv].rl;
 
-        int tmpm = tree[tmv].l;
+        int tmpm = lson(tmv);
         this->backway(tmpm);
     }
     class iterator
@@ -403,7 +371,7 @@ public:
                     return *this;
                 }
             }
-            *this = myt->beginin(myt->tree[ind].r);
+            *this = myt->beginin(rson(ind));
             return *this;
         }
         iterator operator++(int)
@@ -427,7 +395,7 @@ public:
                     return iterator(tmp, myt);
                 }
             }
-            *this = myt->beginin(myt->tree[ind].r);
+            *this = myt->beginin(rson(ind));
             return iterator(tmp, myt);
         }
         const ValueType operator*()
@@ -492,7 +460,7 @@ public:
                     return iterator(tmp, myt);
                 }
             }
-            *this = myt->endin(myt->tree[ind].l);
+            *this = myt->endin(lson(ind));
             return iterator(tmp, myt);
         }
         bool operator==(const iterator& oth) const
@@ -506,9 +474,9 @@ public:
     };
     iterator beginin(int pl) const
     {
-        while (this->tree[pl].l != 0)
+        while (lson(pl) != 0)
         {
-            pl = this->tree[pl].l;
+            pl = lson(pl);
         }
         return iterator(pl, this);
     }
@@ -522,9 +490,9 @@ public:
     }
     iterator endin(int pl) const
     {
-        while (this->tree[pl].r != 0)
+        while (rson(pl) != 0)
         {
-            pl = this->tree[pl].r;
+            pl = rson(pl);
         }
         return iterator(pl, this);
     }
@@ -535,11 +503,11 @@ public:
         {
             if (newk < this->tree[tmv].key)
             {
-                tmv = this->tree[tmv].l;
+                tmv = lson(tmv);
             }
             else if (this->tree[tmv].key < newk)
             {
-                tmv = this->tree[tmv].r;
+                tmv = rson(tmv);
             }
             else
             {
@@ -557,11 +525,11 @@ public:
             if (newk < this->tree[tmv].key)
             {
                 lastb = tmv;
-                tmv = this->tree[tmv].l;
+                tmv = lson(tmv);
             }
             else if (this->tree[tmv].key < newk)
             {
-                tmv = this->tree[tmv].r;
+                tmv = rson(tmv);
             }
             else
             {
@@ -571,6 +539,5 @@ public:
         }
         return iterator(lastb, this);
     }
-
 };
 
