@@ -7,7 +7,7 @@ template<class ValueType>
 class Node
 {
 public:
-    ValueType key;
+    ValueType key{};
     int l = 0;
     int r = 0;
     int p = 0;
